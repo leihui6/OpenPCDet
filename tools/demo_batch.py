@@ -91,6 +91,8 @@ def main():
     model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=True)
     model.cuda()
     model.eval()
+    #fig_count = 0
+    total_second = 0
     with torch.no_grad():
         for idx, data_dict in enumerate(demo_dataset):
             logger.info(f'Visualized sample index: \t{idx + 1}')
@@ -98,16 +100,22 @@ def main():
             load_data_to_gpu(data_dict)
             start_time = time.time()
             pred_dicts, _ = model.forward(data_dict)
-            print("--- %s seconds ---" % (time.time() - start_time))
+            current_spend = (time.time() - start_time)
+            total_second += current_spend
+            print("--- %s seconds ---" % (time.time() - start_time))            
             print(pred_dicts)
             V.draw_scenes(
                 points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
                 ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
             )
 
-            if not OPEN3D_FLAG:
-                mlab.show(stop=True)
-
+            #if not OPEN3D_FLAG:
+            #    mlab.show(stop=True)
+            #mlab.savefig(f"evaluation_figure/eye-to-hand/evaluation_{fig_count}.png")
+            #fig_count+=1
+            #print("image was saved in evaluation_figure/evaluation_{fig_count}.png")
+            #mlab.close()
+    print(f"average spent time is{total_second/len(demo_dataset)}sseconds")
     logger.info('Demo done.')
 
 

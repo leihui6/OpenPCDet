@@ -143,7 +143,7 @@ class PandasetDataset(DatasetTemplate):
             self.dataset[seq_idx].lidar._load_poses()
 
         pose = self.dataset[seq_idx].lidar.poses[info['frame_idx']]
-
+        
         return pose
 
 

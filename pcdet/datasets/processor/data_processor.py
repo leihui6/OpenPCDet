@@ -72,12 +72,15 @@ class DataProcessor(object):
         self.voxel_generator = None
 
         for cur_cfg in processor_configs:
+            #print(cur_cfg)
             cur_processor = getattr(self, cur_cfg.NAME)(config=cur_cfg)
             self.data_processor_queue.append(cur_processor)
 
     def mask_points_and_boxes_outside_range(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             return partial(self.mask_points_and_boxes_outside_range, config=config)
+
+        #print(data_dict['gt_boxes'])
 
         if data_dict.get('points', None) is not None:
             mask = common_utils.mask_points_by_range(data_dict['points'], self.point_cloud_range)
@@ -89,10 +92,14 @@ class DataProcessor(object):
                 use_center_to_filter=config.get('USE_CENTER_TO_FILTER', True)
             )
             data_dict['gt_boxes'] = data_dict['gt_boxes'][mask]
+        
+        #if not data_dict['gt_boxes']:
+        #    print("mask_points_and_boxes_outside_range")
+
         return data_dict
 
     def shuffle_points(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             return partial(self.shuffle_points, config=config)
 
         if config.SHUFFLE_ENABLED[self.mode]:
@@ -101,20 +108,24 @@ class DataProcessor(object):
             points = points[shuffle_idx]
             data_dict['points'] = points
 
+        if not data_dict:
+            print("shuffle_points")
         return data_dict
 
     def transform_points_to_voxels_placeholder(self, data_dict=None, config=None):
         # just calculate grid size
-        if data_dict is None:
+        if not data_dict:
             grid_size = (self.point_cloud_range[3:6] - self.point_cloud_range[0:3]) / np.array(config.VOXEL_SIZE)
             self.grid_size = np.round(grid_size).astype(np.int64)
             self.voxel_size = config.VOXEL_SIZE
             return partial(self.transform_points_to_voxels_placeholder, config=config)
         
+        if not data_dict:
+            print("transform_points_to_voxels_placeholder")
         return data_dict
-        
+
     def transform_points_to_voxels(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             grid_size = (self.point_cloud_range[3:6] - self.point_cloud_range[0:3]) / np.array(config.VOXEL_SIZE)
             self.grid_size = np.round(grid_size).astype(np.int64)
             self.voxel_size = config.VOXEL_SIZE
@@ -122,7 +133,7 @@ class DataProcessor(object):
             # to avoid pickling issues in multiprocess spawn
             return partial(self.transform_points_to_voxels, config=config)
 
-        if self.voxel_generator is None:
+        if not self.voxel_generator:
             self.voxel_generator = VoxelGeneratorWrapper(
                 vsize_xyz=config.VOXEL_SIZE,
                 coors_range_xyz=self.point_cloud_range,
@@ -141,10 +152,13 @@ class DataProcessor(object):
         data_dict['voxels'] = voxels
         data_dict['voxel_coords'] = coordinates
         data_dict['voxel_num_points'] = num_points
+
+        if not data_dict:
+            print("transform_points_to_voxels")
         return data_dict
 
     def sample_points(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             return partial(self.sample_points, config=config)
 
         num_points = config.NUM_POINTS[self.mode]
@@ -173,18 +187,23 @@ class DataProcessor(object):
                 choice = np.concatenate((choice, extra_choice), axis=0)
             np.random.shuffle(choice)
         data_dict['points'] = points[choice]
+
+        if not data_dict:
+            print("sample_points")
         return data_dict
 
     def calculate_grid_size(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             grid_size = (self.point_cloud_range[3:6] - self.point_cloud_range[0:3]) / np.array(config.VOXEL_SIZE)
             self.grid_size = np.round(grid_size).astype(np.int64)
             self.voxel_size = config.VOXEL_SIZE
+            print("calculate_grid_size")
             return partial(self.calculate_grid_size, config=config)
+            
         return data_dict
 
     def downsample_depth_map(self, data_dict=None, config=None):
-        if data_dict is None:
+        if not data_dict:
             self.depth_downsample_factor = config.DOWNSAMPLE_FACTOR
             return partial(self.downsample_depth_map, config=config)
 
@@ -192,6 +211,10 @@ class DataProcessor(object):
             image=data_dict['depth_maps'],
             factors=(self.depth_downsample_factor, self.depth_downsample_factor)
         )
+
+        if not data_dict:
+            print("downsample_depth_map")
+        
         return data_dict
 
     def forward(self, data_dict):
@@ -205,8 +228,12 @@ class DataProcessor(object):
 
         Returns:
         """
-
         for cur_processor in self.data_processor_queue:
+            #print(data_dict['gt_boxes'])
+            #print("##############")
+            #print(data_dict)
             data_dict = cur_processor(data_dict=data_dict)
+            #print(data_dict['gt_boxes'])
+            #exit()
 
         return data_dict

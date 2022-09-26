@@ -130,6 +130,8 @@ class DatasetTemplate(torch_data.Dataset):
         """
         raise NotImplementedError
 
+    
+
     def prepare_data(self, data_dict):
         """
         Args:
@@ -151,10 +153,18 @@ class DatasetTemplate(torch_data.Dataset):
                 voxel_num_points: optional (num_voxels)
                 ...
         """
+        # self.test_count = 0
         if self.training:
             assert 'gt_boxes' in data_dict, 'gt_boxes should be provided for training'
             gt_boxes_mask = np.array([n in self.class_names for n in data_dict['gt_names']], dtype=np.bool_)
             
+            #print(f"###########{self.test_count}")
+            #self.test_count += 1
+            #print(self.class_names, "and", data_dict['gt_names'])
+            #print([n in self.class_names for n in data_dict['gt_names']])
+            #print(gt_boxes_mask)
+            #print("###########")
+            #exit()
             if 'calib' in data_dict:
                 calib = data_dict['calib']
             data_dict = self.data_augmentor.forward(
@@ -165,13 +175,23 @@ class DatasetTemplate(torch_data.Dataset):
             )
             if 'calib' in data_dict:
                 data_dict['calib'] = calib
+            
         if data_dict.get('gt_boxes', None) is not None:
             selected = common_utils.keep_arrays_by_name(data_dict['gt_names'], self.class_names)
+            
             data_dict['gt_boxes'] = data_dict['gt_boxes'][selected]
             data_dict['gt_names'] = data_dict['gt_names'][selected]
+
+            # print("###########")
+            # print(data_dict['gt_boxes'])
+            # print(data_dict['gt_names'])
+
             gt_classes = np.array([self.class_names.index(n) + 1 for n in data_dict['gt_names']], dtype=np.int32)
             gt_boxes = np.concatenate((data_dict['gt_boxes'], gt_classes.reshape(-1, 1).astype(np.float32)), axis=1)
             data_dict['gt_boxes'] = gt_boxes
+
+            # print(data_dict['gt_boxes'])
+            # print("###########")
 
             if data_dict.get('gt_boxes2d', None) is not None:
                 data_dict['gt_boxes2d'] = data_dict['gt_boxes2d'][selected]
@@ -179,9 +199,15 @@ class DatasetTemplate(torch_data.Dataset):
         if data_dict.get('points', None) is not None:
             data_dict = self.point_feature_encoder.forward(data_dict)
 
+        #print("before data_processor ###########")
+        #print("data_dict['gt_boxes']->",data_dict['gt_boxes'])
         data_dict = self.data_processor.forward(
             data_dict=data_dict
         )
+        #print("after data_processor ########")   
+        #print("data_dict['gt_boxes']->",data_dict['gt_boxes'])
+
+
 
         if self.training and len(data_dict['gt_boxes']) == 0:
             new_index = np.random.randint(self.__len__())

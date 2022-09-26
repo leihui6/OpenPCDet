@@ -8,6 +8,8 @@ from ...ops.roiaware_pool3d import roiaware_pool3d_utils
 from ...utils import box_utils, common_utils
 from ..dataset import DatasetTemplate
 
+#import sys
+#sys.setrecursionlimit(99999)
 
 class CustomDataset(DatasetTemplate):
     def __init__(self, dataset_cfg, class_names, training=True, root_path=None, logger=None):
@@ -59,7 +61,7 @@ class CustomDataset(DatasetTemplate):
             line_list = line.strip().split(' ')
             gt_boxes.append(line_list[:-1])
             gt_names.append(line_list[-1])
-
+        
         return np.array(gt_boxes, dtype=np.float32), np.array(gt_names)
 
     def get_lidar(self, idx):
@@ -85,6 +87,7 @@ class CustomDataset(DatasetTemplate):
         return len(self.custom_infos)
 
     def __getitem__(self, index):
+        
         if self._merge_all_iters_to_one_epoch:
             index = index % len(self.custom_infos)
 
@@ -101,6 +104,14 @@ class CustomDataset(DatasetTemplate):
             annos = common_utils.drop_info_with_name(annos, name='DontCare')
             gt_names = annos['name']
             gt_boxes_lidar = annos['gt_boxes_lidar']
+            
+            #print(f"###########{index}")
+            #print(annos)
+            #print(gt_names)
+            #print(gt_boxes_lidar)
+            #print("###########")
+            #exit()
+
             input_dict.update({
                 'gt_names': gt_names,
                 'gt_boxes': gt_boxes_lidar
@@ -277,7 +288,7 @@ if __name__ == '__main__':
         ROOT_DIR = (Path(__file__).resolve().parent / '../../../').resolve()
         create_custom_infos(
             dataset_cfg=dataset_cfg,
-            class_names=['Vehicle', 'Pedestrian', 'Cyclist'],
+            class_names=['Vehicle'],
             data_path=ROOT_DIR / 'data' / 'custom',
             save_path=ROOT_DIR / 'data' / 'custom',
         )

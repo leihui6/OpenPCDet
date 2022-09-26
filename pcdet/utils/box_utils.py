@@ -104,7 +104,10 @@ def mask_boxes_outside_range_numpy(boxes, limit_range, min_num_corners=1, use_ce
         boxes = boxes[:, 0:7]
     if use_center_to_filter:
         box_centers = boxes[:, 0:3]
+        #print(box_centers, limit_range[0:3], limit_range[3:6])
         mask = ((box_centers >= limit_range[0:3]) & (box_centers <= limit_range[3:6])).all(axis=-1)
+        #print(box_centers, mask)
+        #exit()
     else:
         corners = boxes_to_corners_3d(boxes)  # (N, 8, 3)
         corners = corners[:, :, 0:2]
