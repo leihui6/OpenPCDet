@@ -16,5 +16,5 @@ venv/
 output
 version.py
 **/evaluation_figure/
-
+**/object_points/
 
